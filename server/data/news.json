@@ -1,0 +1,7 @@
+[
+    {"headline": "Apple announces breakthrough AI chip for next iPhone", "sentiment": "positive", "source": "TechCrunch"},
+    {"headline": "Supply chain delays may impact Q2 production", "sentiment": "negative", "source": "Bloomberg"},
+    {"headline": "Analysts raise AAPL price target to $250", "sentiment": "positive", "source": "CNBC"},
+    {"headline": "Apple services revenue hits all-time high", "sentiment": "positive", "source": "Reuters"},
+    {"headline": "Competitor launches rival product threatening market share", "sentiment": "negative", "source": "WSJ"}
+]

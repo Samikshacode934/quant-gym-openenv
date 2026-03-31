@@ -1,0 +1,60 @@
+python3 << 'PYTHON_EOF'
+with open('openenv.yaml', 'w') as f:
+    f.write('''name: "Quant-Gym"
+description: "Benchmark environment for testing AI agents on financial data analysis and reasoning"
+version: "1.0.0"
+
+tasks:
+  - id: "task1"
+    name: "Fetch Market Data"
+    description: "Agent must retrieve current price for AAPL"
+    grader_type: "deterministic"
+    max_score: 1.0
+    
+  - id: "task2"
+    name: "News Sentiment Analysis"
+    description: "Agent must analyze news and recommend action with explanation"
+    grader_type: "llm_judge"
+    max_score: 1.0
+    
+  - id: "task3"
+    name: "Backtest Strategy"
+    description: "Agent must backtest a strategy and return risk metrics"
+    grader_type: "deterministic"
+    max_score: 1.0
+
+action_schema:
+  type: "object"
+  properties:
+    type:
+      type: "string"
+      enum: ["GET_PRICE", "GET_NEWS", "BUY", "SELL", "BACKTEST"]
+    symbol:
+      type: "string"
+    amount:
+      type: "integer"
+    explanation:
+      type: "string"
+    strategy:
+      type: "string"
+
+observation_schema:
+  type: "object"
+  properties:
+    timestamp:
+      type: "string"
+    price:
+      type: "number"
+    balance:
+      type: "number"
+    holdings:
+      type: "integer"
+    portfolio_value:
+      type: "number"
+    last_news:
+      type: "object"
+    backtest_results:
+      type: "object"
+''')
+print("openenv.yaml created")
+PYTHON_EOF
