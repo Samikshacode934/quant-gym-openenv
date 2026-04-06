@@ -2,11 +2,15 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from enum import Enum
+from server.app import app as quant_gym_app
+
+
+app = quant_gym_app
 
 # Simple models for the API
 class ActionType(str, Enum):
