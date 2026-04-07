@@ -1,4 +1,3 @@
-cat > README.md << 'EOF'
 ---
 title: Quant-Gym
 emoji: 📈
@@ -9,15 +8,8 @@ pinned: false
 ---
 
 # Quant-Gym: Financial Analysis Environment for AI Agents
+
 An OpenEnv-compliant environment that tests AI agents on financial data analysis, market sentiment, and trading strategy evaluation.
-...
-
-## 🚀 Quick Test (30 seconds)
-
-```bash
-curl https://astocoder-quant-gym.hf.space/health
-curl -X POST https://astocoder-quant-gym.hf.space/reset
-
 
 ## 🎯 Overview
 
@@ -50,10 +42,9 @@ Quant-Gym is a benchmark environment where AI agents can practice:
 | `/docs` | GET | Interactive API documentation (FastAPI) |
 
 ## 🔧 Installation
-
 ### Prerequisites
 - Python 3.10+
-- Docker (optional, for containerized deployment)
+- Docker (for containerized deployment)
 
 ### Local Setup
 
@@ -65,8 +56,8 @@ cd quant-gym-openenv
 # Install dependencies
 pip install -r requirements.txt
 
-# Set up Hugging Face token (optional, for LLM features)
-echo 'HF_TOKEN=your_hf_token_here' > .env
+# Set up Hugging Face token ( for LLM features)  (.env file)
+ 'HF_TOKEN=your_hf_token_here' 
 
 # Start the server
 python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --reload
@@ -82,7 +73,6 @@ json
   "explanation": "RSI indicates oversold condition",
   "strategy": "momentum"
 }
-
 Action Examples
 Action	Description
 {"type": "GET_PRICE"}	Get current stock price
@@ -112,15 +102,16 @@ json
     "total_return": 0.18
   }
 }
-
 🏃 Running the Baseline Agent
-# Set your Hugging Face token 
+
+
+# Set your Hugging Face token
 export HF_TOKEN="your_hf_token_here"
 
 # Run inference
 python inference.py
-
-Expected Output:-
+Expected Output
+text
 [INFO] HF_TOKEN found (length: 37 chars)
 [START] task=quant-gym env=quant-gym model=meta-llama/Llama-3.2-3B-Instruct
 [STEP] step=1 action=BUY 5 reward=0.15 done=false error=null
@@ -128,22 +119,22 @@ Expected Output:-
 [STEP] step=3 action=SELL 5 reward=0.20 done=false error=null
 ...
 [END] success=true steps=10 score=0.650 rewards=...
-
-
 🐳 Docker Deployment
 Build and run with Docker:
+
+bash
 # Build the image
 docker build -t quant-gym .
 
 # Run the container
 docker run -p 7860:7860 quant-gym
-
 Then access the API at http://localhost:7860
 
 🌐 Hugging Face Space
 Live demo: https://huggingface.co/spaces/Astocoder/quant-gym
 
 📁 Project Structure
+text
 quant-gym-openenv/
 ├── Dockerfile              # Container configuration
 ├── inference.py            # Baseline agent script
@@ -165,7 +156,7 @@ quant-gym-openenv/
 
 🔐 Environment Variables
 Variable	Description	Default
-HF_TOKEN	Hugging Face API token	None (optional)
+HF_TOKEN	Hugging Face API token	None 
 API_BASE_URL	HF API endpoint	https://api-inference.huggingface.co/v1
 MODEL_NAME	LLM model name	meta-llama/Llama-3.2-3B-Instruct
 BASE_URL	Quant-Gym API URL	http://localhost:8000
@@ -180,9 +171,13 @@ Reward Function: Partial progress signals for meaningful learning
 
 Reproducibility: Static data ensures consistent results
 
-
 ⚠️ Disclaimer
 This is a research benchmark environment for evaluating AI agent reasoning. It does not provide financial advice or real trading recommendations. All data is for simulation purposes only.
+
+📄 License
+MIT License - See LICENSE file for details.
+
+Built with: Python, FastAPI, OpenEnv, Hugging Face, Docker
 
 
 
