@@ -1,7 +1,23 @@
 cat > README.md << 'EOF'
-# Quant-Gym: Financial Analysis Environment for AI Agents
+---
+title: Quant-Gym
+emoji: 📈
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
 
+# Quant-Gym: Financial Analysis Environment for AI Agents
 An OpenEnv-compliant environment that tests AI agents on financial data analysis, market sentiment, and trading strategy evaluation.
+...
+
+## 🚀 Quick Test (30 seconds)
+
+```bash
+curl https://astocoder-quant-gym.hf.space/health
+curl -X POST https://astocoder-quant-gym.hf.space/reset
+
 
 ## 🎯 Overview
 
