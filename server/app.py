@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models import AgentAction
 from server.environment import TradingEnvironment
+import uvicorn
 
 app = FastAPI(title="Quant-Gym", description="Financial Analysis Environment")
 
@@ -53,3 +54,15 @@ def get_tasks():
             {"id": "3", "name": "Backtest Strategy", "description": "Backtest a trading strategy and return risk metrics"}
         ]
     }
+
+def main():
+    """Entry point for the application"""
+    uvicorn.run(
+        "server.app:app",
+        host="0.0.0.0",
+        port=7860,
+        reload=False
+    )
+
+if __name__ == "__main__":
+    main()

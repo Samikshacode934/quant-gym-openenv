@@ -140,6 +140,7 @@ quant-gym-openenv/
 ├── inference.py            # Baseline agent script
 ├── models.py               # Pydantic schemas
 ├── openenv.yaml            # OpenEnv configuration
+├── pyproject.toml
 ├── requirements.txt        # Python dependencies
 ├── README.md               # This file
 ├── server/
