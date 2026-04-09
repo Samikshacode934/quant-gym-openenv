@@ -6,9 +6,8 @@ from openai import OpenAI
 import requests
 
 
-API_BASE_URL = os.getenv("API_BASE_URL")  # NO DEFAULT 
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")  # default
-HF_TOKEN = os.getenv("HF_TOKEN")  
+API_BASE_URL = os.environ.get("API_BASE_URL")
+API_KEY = os.environ.get("API_KEY")
 
 # Quant-Gym configuration
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
@@ -111,11 +110,6 @@ class QuantGymClient:
 def get_model_action(client: OpenAI, step: int, observation: dict, history: List[str]) -> str:
     """Get action from LLM using the judge's proxy"""
     
-    # CRITICAL: Must use client with API_BASE_URL from judge
-    if not API_BASE_URL:
-        print("[WARNING] API_BASE_URL not set! Using fallback.", flush=True)
-        return fallback_strategy(observation)
-    
     user_prompt = textwrap.dedent(
         f"""
         Step: {step}
@@ -130,9 +124,9 @@ def get_model_action(client: OpenAI, step: int, observation: dict, history: List
     ).strip()
     
     try:
-        # This MUST go through their proxy
+        # CRITICAL: This MUST go through their proxy using BOTH env vars
         completion = client.chat.completions.create(
-            model=MODEL_NAME,
+            model="gpt-3.5-turbo",  # Their proxy expects this
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
@@ -181,18 +175,24 @@ def fallback_strategy(observation: dict) -> str:
 async def main() -> None:
     print("[INFO] Starting Quant-Gym Inference", flush=True)
     
-    # CRITICAL: Check if API_BASE_URL is provided by judge
+    # CRITICAL CHECK: Both environment variables MUST be set
     if not API_BASE_URL:
         print("[ERROR] API_BASE_URL environment variable not set!", flush=True)
         print("[ERROR] This must be provided by the hackathon judge.", flush=True)
-        print("[INFO] Using fallback strategy without LLM.", flush=True)
+        return
     
-    # Initialize OpenAI client with judge's proxy URL
-    # DO NOT use default - MUST use their provided URL
+    if not API_KEY:
+        print("[ERROR] API_KEY environment variable not set!", flush=True)
+        print("[ERROR] This must be provided by the hackathon judge.", flush=True)
+        return
+    
+    print(f"[INFO] Using API_BASE_URL: {API_BASE_URL}", flush=True)
+    
+    # Initialize OpenAI client with judge's proxy - MUST use BOTH
     client = OpenAI(
         base_url=API_BASE_URL,  # Their proxy URL
-        api_key="dummy"  # Their proxy may not need a real key
-    ) if API_BASE_URL else None
+        api_key=API_KEY,        # Their API key
+    )
     
     env = QuantGymClient(BASE_URL)
     
@@ -202,18 +202,14 @@ async def main() -> None:
     success = False
     final_score = 0.0
     
-    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
+    log_start(task=TASK_NAME, env=BENCHMARK, model="gpt-3.5-turbo")
     
     try:
         result = env.reset()
         observation = result.get('observation', {})
         
         for step in range(1, MAX_STEPS + 1):
-            # Get action - this will use their proxy if available
-            if client:
-                action_str = get_model_action(client, step, observation, history)
-            else:
-                action_str = fallback_strategy(observation)
+            action_str = get_model_action(client, step, observation, history)
             
             result = env.step(action_str)
             observation = result.get('observation', {})
