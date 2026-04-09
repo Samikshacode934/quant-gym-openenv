@@ -5,20 +5,12 @@ from typing import List, Optional
 from openai import OpenAI
 import requests
 
-# Try to load from .env file if it exists
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-    print("[INFO] Loaded .env file", flush=True)
-except ImportError:
-    print("[INFO] python-dotenv not installed, using system env only", flush=True)
 
-# Environment variables (set by the judge or .env)
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.2-3B-Instruct")
-HF_TOKEN = os.getenv("HF_TOKEN")
+API_BASE_URL = os.getenv("API_BASE_URL")  # NO DEFAULT 
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")  # default
+HF_TOKEN = os.getenv("HF_TOKEN")  
 
-# Quant-Gym specific configuration
+# Quant-Gym configuration
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 TASK_NAME = os.getenv("TASK_NAME", "quant-gym")
 BENCHMARK = os.getenv("BENCHMARK", "quant-gym")
@@ -27,10 +19,10 @@ TEMPERATURE = 0.7
 MAX_TOKENS = 200
 SUCCESS_SCORE_THRESHOLD = 0.7
 
-# System prompt for financial analysis
+# System prompt
 SYSTEM_PROMPT = textwrap.dedent(
     """
-    You are a financial analyst AI agent. Your goal is to analyze market data and make trading decisions.
+    You are a financial analyst AI agent. Analyze market data and make trading decisions.
     
     Available actions:
     - GET_PRICE: Get current stock price
@@ -39,16 +31,9 @@ SYSTEM_PROMPT = textwrap.dedent(
     - BACKTEST [strategy]: Backtest a strategy (momentum or mean_reversion)
     - GET_NEWS: Get latest news headline
     
-    Strategy tips:
-    - Positive news sentiment suggests BUY
-    - Negative news sentiment suggests SELL
-    - Momentum strategy: Buy when price is rising
-    - Mean reversion: Buy when price is low relative to recent average
-    
     Respond with EXACTLY one action in format: ACTION [parameter]
     Example: BUY 10
     Example: GET_PRICE
-    Example: BACKTEST momentum
     """
 ).strip()
 
@@ -72,14 +57,11 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 
 
 class QuantGymClient:
-    """Client for interacting with Quant-Gym environment"""
-    
     def __init__(self, base_url: str):
         self.base_url = base_url
         self.session = requests.Session()
     
     def reset(self):
-        """Reset environment"""
         try:
             response = self.session.post(f"{self.base_url}/reset")
             return response.json()
@@ -87,34 +69,31 @@ class QuantGymClient:
             print(f"[ERROR] Reset failed: {e}", flush=True)
             return {"observation": {"price": 150, "balance": 10000, "holdings": 0, "portfolio_value": 10000}}
     
-    def step(self, action: str, amount: int = 0, explanation: str = "", strategy: str = ""):
-        """Execute an action"""
+    def step(self, action: str):
         action_upper = action.upper()
         
         if action_upper == "GET_PRICE":
             payload = {"type": "GET_PRICE"}
-        elif action_upper == "GET_NEWS":
-            payload = {"type": "GET_NEWS", "explanation": explanation}
         elif action_upper.startswith("BUY"):
+            amount = 5
             if " " in action_upper:
                 try:
                     amount = int(action_upper.split()[1])
                 except:
-                    amount = 5
+                    pass
             payload = {"type": "BUY", "amount": amount}
         elif action_upper.startswith("SELL"):
+            amount = 5
             if " " in action_upper:
                 try:
                     amount = int(action_upper.split()[1])
                 except:
-                    amount = 5
+                    pass
             payload = {"type": "SELL", "amount": amount}
         elif action_upper.startswith("BACKTEST"):
-            if " " in action_upper:
-                strategy = action_upper.split()[1]
-            payload = {"type": "BACKTEST", "strategy": strategy}
+            payload = {"type": "BACKTEST", "strategy": "momentum"}
         elif action_upper == "GET_NEWS":
-            payload = {"type": "GET_NEWS", "explanation": explanation}
+            payload = {"type": "GET_NEWS", "explanation": "Analyzing market sentiment"}
         else:
             payload = {"type": "GET_PRICE"}
         
@@ -126,12 +105,49 @@ class QuantGymClient:
             return {"observation": {"price": 150, "balance": 10000, "holdings": 0, "portfolio_value": 10000}}
     
     def close(self):
-        """Close the session"""
         self.session.close()
 
 
+def get_model_action(client: OpenAI, step: int, observation: dict, history: List[str]) -> str:
+    """Get action from LLM using the judge's proxy"""
+    
+    # CRITICAL: Must use client with API_BASE_URL from judge
+    if not API_BASE_URL:
+        print("[WARNING] API_BASE_URL not set! Using fallback.", flush=True)
+        return fallback_strategy(observation)
+    
+    user_prompt = textwrap.dedent(
+        f"""
+        Step: {step}
+        Current price: ${observation.get('price', 'unknown')}
+        Balance: ${observation.get('balance', 'unknown')}
+        Holdings: {observation.get('holdings', 0)} shares
+        Portfolio value: ${observation.get('portfolio_value', 'unknown')}
+        Latest news: {observation.get('last_news', {}).get('headline', 'No news')}
+        
+        What is your next action? (BUY X, SELL X, GET_PRICE, BACKTEST, or GET_NEWS)
+        """
+    ).strip()
+    
+    try:
+        # This MUST go through their proxy
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=TEMPERATURE,
+            max_tokens=MAX_TOKENS,
+        )
+        text = completion.choices[0].message.content or ""
+        return parse_action_from_response(text)
+    except Exception as e:
+        print(f"[DEBUG] LLM error: {e}, using fallback", flush=True)
+        return fallback_strategy(observation)
+
+
 def parse_action_from_response(text: str) -> str:
-    """Parse LLM response into action string"""
     text = text.strip().upper()
     
     if text.startswith("BUY"):
@@ -145,7 +161,7 @@ def parse_action_from_response(text: str) -> str:
             return f"SELL {parts[1]}"
         return "SELL 5"
     elif text.startswith("BACKTEST"):
-        return "BACKTEST momentum"
+        return "BACKTEST"
     elif text.startswith("GET_NEWS"):
         return "GET_NEWS"
     else:
@@ -153,7 +169,6 @@ def parse_action_from_response(text: str) -> str:
 
 
 def fallback_strategy(observation: dict) -> str:
-    """Rule-based strategy when LLM is unavailable"""
     sentiment = observation.get('last_news', {}).get('sentiment', 'neutral')
     if sentiment == 'positive':
         return "BUY 5"
@@ -163,21 +178,22 @@ def fallback_strategy(observation: dict) -> str:
         return "GET_PRICE"
 
 
-def get_model_action(step: int, observation: dict, history: List[str]) -> str:
-    """Get action using fallback strategy (no LLM required for basic testing)"""
-    return fallback_strategy(observation)
-
-
 async def main() -> None:
     print("[INFO] Starting Quant-Gym Inference", flush=True)
     
-    # Check token status
-    if HF_TOKEN:
-        print(f"[INFO] HF_TOKEN found (length: {len(HF_TOKEN)} chars)", flush=True)
-    else:
-        print("[INFO] No HF_TOKEN found, using rule-based fallback strategy", flush=True)
+    # CRITICAL: Check if API_BASE_URL is provided by judge
+    if not API_BASE_URL:
+        print("[ERROR] API_BASE_URL environment variable not set!", flush=True)
+        print("[ERROR] This must be provided by the hackathon judge.", flush=True)
+        print("[INFO] Using fallback strategy without LLM.", flush=True)
     
-    # Initialize environment client
+    # Initialize OpenAI client with judge's proxy URL
+    # DO NOT use default - MUST use their provided URL
+    client = OpenAI(
+        base_url=API_BASE_URL,  # Their proxy URL
+        api_key="dummy"  # Their proxy may not need a real key
+    ) if API_BASE_URL else None
+    
     env = QuantGymClient(BASE_URL)
     
     history: List[str] = []
@@ -186,29 +202,25 @@ async def main() -> None:
     success = False
     final_score = 0.0
     
-    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME if HF_TOKEN else "fallback-rule-based")
+    log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
     
     try:
-        # Reset environment
         result = env.reset()
         observation = result.get('observation', {})
-        print(f"[INFO] Reset complete. Initial observation: {observation}", flush=True)
         
         for step in range(1, MAX_STEPS + 1):
-            # Get action
-            action_str = get_model_action(step, observation, history)
+            # Get action - this will use their proxy if available
+            if client:
+                action_str = get_model_action(client, step, observation, history)
+            else:
+                action_str = fallback_strategy(observation)
             
-            # Execute action
             result = env.step(action_str)
             observation = result.get('observation', {})
             
-            # Calculate reward
             portfolio_value = observation.get('portfolio_value', 10000)
-            sentiment = observation.get('last_news', {}).get('sentiment', 'neutral')
-            
             profit_reward = max(0, (portfolio_value - 10000) / 10000)
-            sentiment_bonus = 0.2 if sentiment == 'positive' else (-0.1 if sentiment == 'negative' else 0)
-            reward = min(1.0, max(0.0, profit_reward + sentiment_bonus))
+            reward = min(1.0, max(0.0, profit_reward))
             
             done = step >= MAX_STEPS - 1
             error = None
@@ -233,7 +245,7 @@ async def main() -> None:
     finally:
         try:
             env.close()
-        except Exception as e:
+        except:
             pass
         log_end(success=success, steps=steps_taken, score=final_score, rewards=rewards)
 
