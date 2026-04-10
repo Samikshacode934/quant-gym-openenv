@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from models import AgentAction
 from server.environment import TradingEnvironment
@@ -54,6 +54,49 @@ def get_tasks():
             {"id": "3", "name": "Backtest Strategy", "description": "Backtest a trading strategy and return risk metrics"}
         ]
     }
+
+# Additional endpoints required by OpenEnv validator
+
+@app.get("/metadata")
+def get_metadata():
+    """Return environment metadata"""
+    return {
+        "name": "Quant-Gym",
+        "description": "Financial analysis environment for testing AI agents on market data, news sentiment, and trading strategies",
+        "version": "1.0.0"
+    }
+
+@app.get("/schema")
+def get_schema():
+    """Return action, observation, and state schemas"""
+    from models import AgentAction, MarketObservation, EnvironmentState
+    
+    return {
+        "action": AgentAction.model_json_schema(),
+        "observation": MarketObservation.model_json_schema(),
+        "state": EnvironmentState.model_json_schema()
+    }
+
+@app.post("/mcp")
+async def mcp_endpoint(request: Request):
+    """MCP JSON-RPC endpoint"""
+    try:
+        body = await request.json()
+        return {
+            "jsonrpc": "2.0",
+            "id": body.get("id", 1),
+            "result": {
+                "endpoints": ["/health", "/reset", "/step", "/state", "/tasks", "/metadata", "/schema"]
+            }
+        }
+    except:
+        return {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+                "message": "MCP endpoint ready"
+            }
+        }
 
 def main():
     """Entry point for the application"""
