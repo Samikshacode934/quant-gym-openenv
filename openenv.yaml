@@ -11,19 +11,19 @@ tasks:
   - id: "task1"
     name: "Fetch Market Data"
     description: "Agent must retrieve current price for AAPL"
-    grader: "graders.task1_grader.grade_task1"
+    grader: "task1_grader.grade_task1"
     max_score: 1.0
     
   - id: "task2"
     name: "News Sentiment Analysis"
     description: "Agent must analyze news and recommend Buy/Sell/Hold with explanation"
-    grader: "graders.task2_grader.grade_task2"
+    grader: "task2_grader.grade_task2"
     max_score: 1.0
     
   - id: "task3"
     name: "Backtest Strategy"
     description: "Agent must backtest a trading strategy and return risk metrics"
-    grader: "graders.task3_grader.grade_task3"
+    grader: "task3_grader.grade_task3"
     max_score: 1.0
 
 action_schema:
