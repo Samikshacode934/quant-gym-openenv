@@ -1,5 +1,5 @@
 name: "Quant-Gym"
-description: "Financial analysis environment for testing AI agents on market data, news sentiment, and trading strategies"
+description: "Financial analysis environment for testing AI agents"
 version: "1.0.0"
 
 environment:
@@ -11,59 +11,59 @@ tasks:
   - id: "task1"
     name: "Fetch Market Data"
     description: "Agent must retrieve current price for AAPL"
-    grader: "task1_grader.grade_task1"
+    difficulty: "easy"
+    grader:
+      type: deterministic
+      endpoint: /grader
     max_score: 1.0
     
   - id: "task2"
     name: "News Sentiment Analysis"
-    description: "Agent must analyze news and recommend Buy/Sell/Hold with explanation"
-    grader: "task2_grader.grade_task2"
+    description: "Agent must analyze news and recommend action"
+    difficulty: "medium"
+    grader:
+      type: llm_judge
+      endpoint: /grader
     max_score: 1.0
     
   - id: "task3"
     name: "Backtest Strategy"
-    description: "Agent must backtest a trading strategy and return risk metrics"
-    grader: "task3_grader.grade_task3"
+    description: "Agent must backtest a trading strategy"
+    difficulty: "hard"
+    grader:
+      type: deterministic
+      endpoint: /grader
     max_score: 1.0
 
-graders:
-  task1: "task1_grader.grade_task1"
-  task2: "task2_grader.grade_task2"
-  task3: "task3_grader.grade_task3"
-
 action_schema:
-  type: "object"
+  type: object
   properties:
     type:
-      type: "string"
-      enum: ["GET_PRICE", "GET_NEWS", "BUY", "SELL", "BACKTEST"]
+      type: string
+      enum: [GET_PRICE, GET_NEWS, BUY, SELL, BACKTEST]
     symbol:
-      type: "string"
-      default: "AAPL"
+      type: string
     amount:
-      type: "integer"
-      minimum: 0
+      type: integer
     explanation:
-      type: "string"
+      type: string
     strategy:
-      type: "string"
-  required:
-    - "type"
+      type: string
 
 observation_schema:
-  type: "object"
+  type: object
   properties:
     timestamp:
-      type: "string"
+      type: string
     price:
-      type: "number"
+      type: number
     balance:
-      type: "number"
+      type: number
     holdings:
-      type: "integer"
+      type: integer
     portfolio_value:
-      type: "number"
+      type: number
     last_news:
-      type: "object"
+      type: object
     backtest_results:
-      type: "object"
+      type: object

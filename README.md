@@ -153,7 +153,8 @@ quant-gym-openenv/
 ├── Dockerfile              # Container configuration
 ├── inference.py            # Baseline agent script
 ├── models.py               # Pydantic schemas
-├── openenv.yaml            # OpenEnv configuration
+├── openenv.yaml  
+├── pre_validation.sh          # OpenEnv configuration
 ├── pyproject.toml          # Python project config
 ├── requirements.txt        # Python dependencies
 ├── README.md               # This file
