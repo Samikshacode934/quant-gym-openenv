@@ -26,6 +26,11 @@ tasks:
     grader: "task3_grader.grade_task3"
     max_score: 1.0
 
+graders:
+  task1: "task1_grader.grade_task1"
+  task2: "task2_grader.grade_task2"
+  task3: "task3_grader.grade_task3"
+
 action_schema:
   type: "object"
   properties:
