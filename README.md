@@ -58,7 +58,7 @@ Quant-Gym is a benchmark environment where AI agents can practice:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Astocoder/quant-gym-openenv.git
+git clone https://github.com/Samikshacode934/quant-gym-openenv.git
 cd quant-gym-openenv
 
 # Install dependencies
